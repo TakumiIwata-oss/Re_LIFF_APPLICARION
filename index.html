@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>メニュー注文システム</title>
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        .menu-item {
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin: 10px;
+            border-radius: 5px;
+        }
+        .order-button {
+            background-color: #00B900;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #order-summary {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f5f5f5;
+        }
+    </style>
+</head>
+<body>
+    <h1>メニュー注文</h1>
+    <div id="menu-list">
+        <div class="menu-item">
+            <h3>ラーメン</h3>
+            <p>価格: 800円</p>
+            <input type="number" min="0" value="0" id="ramen-quantity">
+            <button onclick="addToOrder('ラーメン', 800, 'ramen-quantity')">カートに追加</button>
+        </div>
+        <div class="menu-item">
+            <h3>餃子</h3>
+            <p>価格: 500円</p>
+            <input type="number" min="0" value="0" id="gyoza-quantity">
+            <button onclick="addToOrder('餃子', 500, 'gyoza-quantity')">カートに追加</button>
+        </div>
+    </div>
+
+    <div id="order-summary">
+        <h2>注文内容</h2>
+        <div id="order-items"></div>
+        <p>合計金額: <span id="total-amount">0</span>円</p>
+        <button class="order-button" onclick="submitOrder()">注文を確定する</button>
+    </div>
+
+    <script>
+        let orderItems = [];
+        let totalAmount = 0;
+
+        // LIFFの初期化
+        async function initializeLiff() {
+            try {
+                await liff.init({
+                    liffId: "2007208830-ZEwnlrY9"
+                });
+                
+                // ログインしていない場合はログインを促す
+                if (!liff.isLoggedIn()) {
+                    liff.login();
+                } else {
+                    // ログイン済みの場合の処理
+                    const profile = await liff.getProfile();
+                    console.log("Logged in as: " + profile.displayName);
+                }
+            } catch (err) {
+                console.error("LIFF initialization failed", err);
+            }
+        }
+
+        // ページ読み込み時にLIFFを初期化
+        window.onload = initializeLiff;
+
+        function addToOrder(itemName, price, quantityId) {
+            const quantity = parseInt(document.getElementById(quantityId).value);
+            if (quantity > 0) {
+                const amount = price * quantity;
+                orderItems.push({ name: itemName, quantity: quantity, amount: amount });
+                totalAmount += amount;
+                updateOrderSummary();
+            }
+        }
+
+        function updateOrderSummary() {
+            const orderItemsDiv = document.getElementById('order-items');
+            orderItemsDiv.innerHTML = '';
+            orderItems.forEach(item => {
+                orderItemsDiv.innerHTML += `
+                    <p>${item.name} × ${item.quantity} = ${item.amount}円</p>
+                `;
+            });
+            document.getElementById('total-amount').textContent = totalAmount;
+        }
+
+        function submitOrder() {
+            if (orderItems.length === 0) {
+                alert('商品を選択してください。');
+                return;
+            }
+
+            let message = "【注文内容】\n";
+            orderItems.forEach(item => {
+                message += `${item.name} × ${item.quantity}\n`;
+            });
+            message += `\n合計金額: ${totalAmount}円`;
+
+            liff.sendMessages([{
+                type: 'text',
+                text: message
+            }])
+            .then(() => {
+                alert('注文が完了しました！');
+                liff.closeWindow();
+            })
+            .catch((error) => {
+                console.error('Error sending message: ' + error);
+            });
+        }
+    </script>
+</body>
+</html>
