@@ -56,13 +56,27 @@
         let totalAmount = 0;
 
         // LIFFの初期化
-        liff.init({
-            liffId: "2007208830-ZEwnlrY9"
-        }).then(() => {
-            if (!liff.isLoggedIn()) {
-                liff.login();
+        async function initializeLiff() {
+            try {
+                await liff.init({
+                    liffId: "2007208830-ZEwnlrY9"
+                });
+                
+                // ログインしていない場合はログインを促す
+                if (!liff.isLoggedIn()) {
+                    liff.login();
+                } else {
+                    // ログイン済みの場合の処理
+                    const profile = await liff.getProfile();
+                    console.log("Logged in as: " + profile.displayName);
+                }
+            } catch (err) {
+                console.error("LIFF initialization failed", err);
             }
-        }).catch(err => console.error(err));
+        }
+
+        // ページ読み込み時にLIFFを初期化
+        window.onload = initializeLiff;
 
         function addToOrder(itemName, price, quantityId) {
             const quantity = parseInt(document.getElementById(quantityId).value);
